@@ -6,12 +6,14 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  Alert,
 } from 'react-native';
 import Voice from '@react-native-community/voice';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+import {apiCall} from '../api/openAI';
 import Features from '../components/features';
 import Tts from 'react-native-tts';
 
@@ -42,30 +44,72 @@ const App = () => {
 
   const startRecording = async () => {
     setRecording(true);
-    console.log('recording');
-    // Tts.stop();
+    Tts.stop();
     try {
       await Voice.start('en-GB'); // en-US
     } catch (error) {
       console.log('error', error);
     }
   };
-
   const stopRecording = async () => {
-    console.log('stop');
     try {
       await Voice.stop();
       setRecording(false);
+      fetchResponse();
     } catch (error) {
       console.log('error', error);
     }
   };
-
   const clear = () => {
     Tts.stop();
     setSpeaking(false);
     setLoading(false);
     setMessages([]);
+  };
+
+  const fetchResponse = async () => {
+    if (result.trim().length > 0) {
+      setLoading(true);
+      let newMessages = [...messages];
+      newMessages.push({role: 'user', content: result.trim()});
+      setMessages([...newMessages]);
+
+      // scroll to the bottom of the view
+      updateScrollView();
+
+      // fetching response from chatGPT with our prompt and old messages
+      apiCall(result.trim(), newMessages).then(res => {
+        console.log('got api data');
+        setLoading(false);
+        if (res.success) {
+          setMessages([...res.data]);
+          setResult('');
+          updateScrollView();
+
+          // now play the response to user
+          startTextToSpeach(res.data[res.data.length - 1]);
+        } else {
+          Alert.alert('Error', res.msg);
+        }
+      });
+    }
+  };
+
+  const updateScrollView = () => {
+    setTimeout(() => {
+      scrollViewRef?.current?.scrollToEnd({animated: true});
+    }, 200);
+  };
+
+  const startTextToSpeach = message => {
+    if (!message.content.includes('https')) {
+      setSpeaking(true);
+      // playing response with the voice id and voice speed
+      Tts.speak(message.content, {
+        iosVoiceId: 'com.apple.ttsbundle.Samantha-compact',
+        rate: 0.5,
+      });
+    }
   };
 
   const stopSpeaking = () => {
