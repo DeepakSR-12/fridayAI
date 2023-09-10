@@ -87,7 +87,7 @@ const App = () => {
           updateScrollView();
 
           // now play the response to user
-          startTextToSpeech(res.data[res.data.length - 1]);
+          startTextToSpeach(res.data[res.data.length - 1]);
         } else {
           Alert.alert('Error', res.msg);
         }
@@ -101,7 +101,7 @@ const App = () => {
     }, 200);
   };
 
-  const startTextToSpeech = message => {
+  const startTextToSpeach = message => {
     if (!message.content.includes('https')) {
       setSpeaking(true);
       // playing response with the voice id and voice speed
@@ -116,7 +116,6 @@ const App = () => {
     Tts.stop();
     setSpeaking(false);
   };
-
 
   useEffect(() => {
     // voice handler events
